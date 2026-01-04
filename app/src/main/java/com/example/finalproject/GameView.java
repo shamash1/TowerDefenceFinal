@@ -100,6 +100,19 @@ public class GameView extends SurfaceView implements Runnable {
     }
 
     private void update(float dt) {
+        // Inside your GameView.java update() method
+        if (castleHp <= 0) {
+            castleHp = 0;
+            currentState = STATE_GAME_OVER;
+
+            // Save the wave reached to Firebase!
+            FBsingleton.getInstance().saveHighScore(waveManager.getWaveNumber());
+        }
+        // Inside GameView.java update() method:
+        if (currentState == STATE_GAME_OVER) {
+            // Trigger Firebase save when player loses
+            FBsingleton.getInstance().saveHighScore(waveManager.getWaveNumber());
+        }
         if (shakeTimer > 0) shakeTimer -= dt;
         waveManager.update(dt, enemies, paths);
         for (int i = enemies.size() - 1; i >= 0; i--) {

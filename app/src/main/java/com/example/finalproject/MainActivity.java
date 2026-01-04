@@ -1,54 +1,68 @@
 package com.example.finalproject;
 
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.pm.ActivityInfo;
+import android.content.Intent;
 import android.os.Bundle;
-import android.view.Window;
-import android.view.WindowManager;
-import android.widget.EditText;
+import android.widget.FrameLayout;
+import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
+import com.google.android.material.tabs.TabLayout;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
-public class MainActivity extends Activity {
-    private GameView gameView;
+public class MainActivity extends AppCompatActivity {
+
+    FrameLayout frameLayout;
+    TabLayout tabLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
+        setContentView(R.layout.activity_main);
 
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
 
-        gameView = new GameView(this);
-        setContentView(gameView);
+        frameLayout = findViewById(R.id.frameLayout);
+        tabLayout = findViewById(R.id.tabLayout);
 
-        // SHOW LOGIN DIALOG
-        final EditText input = new EditText(this);
-        new AlertDialog.Builder(this)
-                .setTitle("Defender Login")
-                .setMessage("Enter your name to begin:")
-                .setView(input)
-                .setCancelable(false)
-                .setPositiveButton("Enter Kingdom", (dialog, which) -> {
-                    String name = input.getText().toString();
-                    if (!name.isEmpty()) {
-                        gameView.setPlayerName(name);
-                    }
-                })
-                .show();
+        // Load LoginFragment by default
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.frameLayout, new LoginFragment())
+                .commit();
+
+        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                Fragment fragment = (tab.getPosition() == 0) ? new LoginFragment() : new RegistrationFragment();
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.frameLayout, fragment)
+                        .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+                        .commit();
+            }
+            @Override public void onTabUnselected(TabLayout.Tab tab) {}
+            @Override public void onTabReselected(TabLayout.Tab tab) {}
+        });
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        if (gameView != null) gameView.resume();
+    protected void onStart() {
+        super.onStart();
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if(currentUser != null) reload();
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (gameView != null) gameView.pause();
+    private void reload() {
+        Intent intent = new Intent(MainActivity.this, WelcomeActivity.class);
+        startActivity(intent);
+        finish();
     }
 }
